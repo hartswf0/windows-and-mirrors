@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>W04 · S7: Windows & Mirrors</title>
+    <meta name="color-scheme" content="light dark">
+    <style>
+        /* Base Variables */
+        :root {
+            --bg-color: #f8f8f8;
+            --text-color: #111;
+            --secondary-text-color: #333;
+            --accent-color: #333;
+            --border-color: #ccc;
+            --line-height: 1.5;
+            --base-font-size: calc(16px + 0.2vw);
+            --max-line-length: 72ch;
+            --masthead-height: 50px;
+            --navbar-height: 60px;
+            --slide-padding-vertical: 20px;
+            --slide-padding-horizontal: 20px;
+        }
+
+        /* Dark Mode Support */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #111;
+                --text-color: #f8f8f8;
+                --secondary-text-color: #ccc;
+                --accent-color: #aaa;
+                --border-color: #444;
+            }
+        }
+
+        /* Reduced Motion Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            .slide { transition: none !important; }
+            .quote-full { transition: none !important; }
+        }
+
+        /* Global Styles */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden; /* Manage scrolling with individual slides */
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: var(--base-font-size);
+            line-height: var(--line-height);
+            -webkit-text-size-adjust: 100%; /* Ensure mobile readability */
+        }
+
+        /* Presentation Container */
+        #presentation-container {
+            display: flex;
+            height: 100%;
+            position: relative;
+        }
+
+        /* Slide Styles */
+        .slide {
+            flex-shrink: 0;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+            transform: translateX(100%); /* Initial off-screen position */
+            overflow-y: auto; /* Allow content to scroll within a slide */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transform: translateX(0);
+        }
+
+        /* Slide Content Wrapper - for consistent padding and max-width */
+        .slide-content-wrapper {
+            max-width: var(--max-line-length);
+            width: 100%;
+            margin: 0 auto;
+            padding: var(--slide-padding-vertical) var(--slide-padding-horizontal);
+            box-sizing: border-box;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start; /* Align content to the left */
+        }
+
+        /* Specific adjustments for the cover slide */
+        .slide:first-child .slide-content-wrapper {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .slide:first-child .slide-content-wrapper p {
+            max-width: 60ch; /* Slightly narrower for cover text */
+        }
+
+
+        /* Headings */
+        .slide h1, .slide h2, .slide h3 {
+            color: var(--secondary-text-color);
+            text-align: left; /* Default left align */
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+            line-height: 1.2;
+            width: 100%;
+        }
+        .slide h1 { font-size: 2.2em; text-align: center;}
+        .slide h2 { font-size: 1.8em; }
+        .slide h3 { font-size: 1.4em; }
+        .slide p { margin-bottom: 1em; }
+        .slide ol, .slide ul { margin-left: 20px; padding: 0; }
+        .slide li { margin-bottom: 0.5em; }
+
+        /* Masthead (Header) */
+        .masthead {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: var(--masthead-height);
+            background-color: var(--bg-color);
+            border-bottom: 1px solid var(--accent-color);
+            padding: 10px var(--slide-padding-horizontal);
+            box-sizing: border-box;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9em;
+            color: var(--secondary-text-color);
+        }
+        .masthead strong {
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        /* Navigation Bar (Footer) */
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: var(--navbar-height);
+            background-color: var(--bg-color);
+            border-top: 1px solid var(--accent-color);
+            padding: 10px var(--slide-padding-horizontal);
+            box-sizing: border-box;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9em;
+        }
+        .nav-bar button {
+            background: none;
+            border: 1px solid var(--accent-color);
+            color: var(--text-color);
+            padding: 8px 15px;
+            cursor: pointer;
+            min-width: 44px; /* Accessible tap target */
+            min-height: 44px; /* Accessible tap target */
+            font-size: 1em;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+        .nav-bar button:hover:not(:disabled), .nav-bar button:focus:not(:disabled) {
+            background-color: var(--border-color);
+            color: var(--secondary-text-color);
+            outline: none;
+        }
+        .nav-bar button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .nav-bar .progress-dots {
+            display: flex;
+            gap: 5px;
+            flex-grow: 1;
+            justify-content: center;
+            align-items: center;
+            margin: 0 10px;
+        }
+        .nav-bar .dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--border-color);
+            border-radius: 50%;
+            cursor: pointer;
+            min-width: 16px; /* Larger hit area */
+            min-height: 16px;
+            display: flex; /* Centering for potential larger hit area */
+            align-items: center;
+            justify-content: center;
+        }
+        .nav-bar .dot.active {
+            background-color: var(--accent-color);
+        }
+        .nav-bar .dot:hover, .nav-bar .dot:focus {
+            outline: 1px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+        .nav-bar .grounded-badge {
+            font-size: 0.8em;
+            color: var(--secondary-text-color);
+            margin-right: 10px;
+        }
+
+        /* Quote chips */
+        .quote-chip {
+            background-color: var(--border-color);
+            border: 1px solid var(--accent-color);
+            padding: 10px 15px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            max-width: var(--max-line-length);
+            box-sizing: border-box;
+        }
+        .quote-chip small {
+            display: block;
+            text-align: right;
+            font-style: italic;
+            color: var(--secondary-text-color);
+            margin-top: 5px;
+        }
+        .quote-full {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            margin-top: 10px;
+            font-style: italic;
+            color: var(--secondary-text-color);
+            padding-right: 15px; /* Visual alignment with truncated quote */
+        }
+        .quote-full.expanded {
+            max-height: 200px; /* Sufficiently large to show content */
+            margin-bottom: 10px;
+        }
+
+        /* Specific slide layouts */
+        .key-terms-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .term-item {
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            background-color: var(--bg-color);
+        }
+        .term-item h3 {
+            text-align: left;
+            margin-top: 0;
+            margin-bottom: 0.5em;
+        }
+
+        .two-column-table {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px; /* To make borders look continuous */
+            margin-top: 20px;
+            border-top: 1px solid var(--accent-color);
+            border-left: 1px solid var(--accent-color);
+            width: 100%;
+            background-color: var(--accent-color); /* For the grid lines */
+        }
+        .two-column-table div {
+            padding: 10px;
+            border-right: 1px solid var(--accent-color);
+            border-bottom: 1px solid var(--accent-color);
+            background-color: var(--bg-color);
+        }
+        .two-column-table .header-cell {
+            font-weight: bold;
+            text-align: center;
+            background-color: var(--border-color);
+        }
+
+        .case-study-item {
+            margin-bottom: 15px;
+            width: 100%;
+        }
+        .case-study-item ul {
+            list-style: none;
+            padding-left: 20px;
+            margin: 5px 0;
+        }
+        .case-study-item ul li::before {
+            content: "•";
+            color: var(--accent-color);
+            display: inline-block;
+            width: 1em;
+            margin-left: -1em;
+        }
+
+        .diagram-box {
+            border: 1px solid var(--accent-color);
+            padding: 10px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            text-align: left; /* Keep pre-formatted text left-aligned */
+            font-family: monospace;
+            white-space: pre-wrap;
+            background-color: var(--border-color);
+            color: var(--secondary-text-color);
+            font-size: 0.8em;
+            overflow-x: auto; /* Allow horizontal scroll for wide diagrams */
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .references-list {
+            list-style: none;
+            padding: 0;
+            width: 100%;
+        }
+        .references-list li {
+            margin-bottom: 0.5em;
+            font-size: 0.9em;
+        }
+        .references-list li em {
+            font-style: italic;
+        }
+        .references-list li a { /* Non-navigating link-style */
+            color: var(--text-color);
+            text-decoration: none;
+        }
+        .references-list li a:hover, .references-list li a:focus {
+            text-decoration: underline;
+        }
+        .copy-citations-btn {
+            display: block;
+            width: fit-content;
+            margin: 20px auto;
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            border: 1px solid var(--accent-color);
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .copy-citations-btn:hover, .copy-citations-btn:focus {
+            background-color: var(--secondary-text-color);
+            color: var(--bg-color);
+        }
+
+        /* Small caps utility */
+        .small-caps {
+            font-variant: small-caps;
+        }
+
+        /* Adjustments for desktop */
+        @media (min-width: 768px) {
+            .masthead, .nav-bar {
+                padding-left: 50px;
+                padding-right: 50px;
+            }
+            .key-terms-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .slide-content-wrapper {
+                padding-left: 50px;
+                padding-right: 50px;
+            }
+        }
+        @media (min-width: 1024px) {
+            body { font-size: 18px; } /* Slightly larger base font */
+        }
+
+    </style>
+</head>
+<body>
+    <header class="masthead">
+        <span role="doc-subtitle"><strong>W04 — S7</strong></span>
+        <span role="doc-title">Windows & Mirrors: The Special Effect of Immediacy</span>
+    </header>
+
+    <main id="presentation-container">
+        <!-- Slides will be dynamically generated and inserted here by JavaScript -->
+    </main>
+
+    <nav class="nav-bar" aria-label="Slide navigation">
+        <button id="prev-slide-btn" aria-label="Previous slide">‹ prev</button>
+        <div class="progress-dots" role="tablist"></div>
+        <span class="grounded-badge" aria-live="polite" aria-atomic="true">Grounded 0/0</span>
+        <button id="next-slide-btn" aria-label="Next slide">next ›</button>
+    </nav>
+
+    <script>
+        // Run configuration:
+        // Date: Tue 09/09
+        // Course Block: W04 — S7
+        // Case Medium: Instagram Stories HUD
+
+        const INPUT = {
+            caseMedium: "Instagram Stories HUD",
+            quotes: [
+                { author:"Bolter & Grusin", work:"Remediation", year:1999, cite:"p. 21", text:"Our culture has been striving to achieve immediacy throughout the history of Western representation. Immediacy is a style of visual representation whose purpose is to make the viewer forget the presence of the medium and believe that he is in the presence of the objects themselves." },
+                { author:"Bolter & Grusin", work:"Remediation", year:1999, cite:"p. 34", text:"Hypermediacy is that style of visual representation whose purpose is to remind the viewer of the medium. Hypermediacy is heterogeneity, it is a multiplicity of representations and a constant awareness of the act of representation." },
+                { author:"McCloud", work:"Understanding Comics", year:1993, cite:"ch.2", text:"The cartoon is a vacuum into which our identity and awareness are pulled... We don't just observe the cartoon, we BECOME IT!" },
+                { author:"McCloud", work:"Understanding Comics", year:1993, cite:"ch.3", text:"Closure is the phenomenon of observing the parts, but perceiving the whole. It's the mental process described in Chapter Two whereby these lines become a face could be considered closure." }
+            ],
+            keyArguments: {
+                bgThroughline: "Bolter and Grusin argue that media constantly oscillate between the desire for transparent immediacy, where the medium disappears, and hypermediacy, which revels in the medium's presence. This oscillation reveals that all 'immediacy' is a constructed effect, built upon the remediation of prior media forms.",
+                mcBridge: "McCloud's concept of closure, the reader's unconscious act of filling in the gaps between discrete panels, is fundamental to creating the illusion of continuous time and motion in comics. This mental collaboration is a core 'special effect' that allows the medium to achieve a sense of transparent immediacy, despite its fragmented nature."
+            },
+            microEvidence: [
+                "Tap-to-advance full-screen image removes most chrome, creating an immersive, immediate view of content.",
+                "The subtle progress bar and profile icon with a glowing ring timer consciously reintroduce UI elements, reminding the user they are interacting with a mediated experience (hypermediacy).",
+                "The vertical story format, advancing with taps, remediates both the linear slideshow and flipbook animations, borrowing conventions from older media.",
+                "Users mentally connect the sequence of static images and short video clips into a continuous narrative, inferring action and emotion between frames through closure."
+            ]
+        };
+
+        const slidesData = [
+            {
+                title: "Cover",
+                content: `
+                    <h1>Windows & Mirrors: The Special Effect of Immediacy</h1>
+                    <p><strong>Course Block:</strong> W04 — S7</p>
+                    <p><strong>Date:</strong> Tue 09/09</p>
+                    <p><strong>Core Claim:</strong> All “immediacy” is a special effect, remediating what came before.</p>
+                    <p><strong>Key Question:</strong> New media oscillate between transparent immediacy and hypermediated self-awareness.</p>
+                `
+            },
+            {
+                title: "Today’s Map",
+                content: `
+                    <h2>Today’s Map</h2>
+                    <p>A brief agenda for our session:</p>
+                    <ul>
+                        <li><strong>Terms:</strong> Defining our vocabulary.</li>
+                        <li><strong>Readings:</strong> Anchoring our understanding in Bolter & Grusin and McCloud.</li>
+                        <li><strong>Case:</strong> Analyzing the ${INPUT.caseMedium}.</li>
+                        <li><strong>Q&A:</strong> Discussion with Jay Bolter.</li>
+                    </ul>
+                `
+            },
+            {
+                title: "Key Terms",
+                content: `
+                    <h2>Key Terms</h2>
+                    <div class="key-terms-grid">
+                        <div class="term-item">
+                            <h3>Immediacy</h3>
+                            <p>A style of representation aiming for transparency, making the medium disappear to give the viewer direct access to content.</p>
+                            <div class="quote-chip" data-quote-index="0"></div>
+                        </div>
+                        <div class="term-item">
+                            <h3>Hypermediacy</h3>
+                            <p>A style of representation that foregrounds the medium, emphasizing its presence and the act of representation itself.</p>
+                            <div class="quote-chip" data-quote-index="1"></div>
+                        </div>
+                        <div class="term-item">
+                            <h3>Remediation</h3>
+                            <p>The formal logic by which new media refashion older media, often by alternately seeking to erase or multiply their presence. <span class="small-caps">[source: Bolter & Grusin, Remediation]</span></p>
+                            <p><em>(No specific quote provided for Remediation in the input data.)</em></p>
+                        </div>
+                        <div class="term-item">
+                            <h3>Closure</h3>
+                            <p>The mental process by which a reader observes the parts of an image or sequence and perceives the whole, filling in gaps to create continuity.</p>
+                            <div class="quote-chip" data-quote-index="3"></div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                title: "Reading Anchors — Bolter & Grusin",
+                content: `
+                    <h2>Reading Anchors — Bolter & Grusin</h2>
+                    <p>${INPUT.keyArguments.bgThroughline}</p>
+                    <div class="quote-chip" data-quote-index="0"></div>
+                    <div class="quote-chip" data-quote-index="1"></div>
+                `
+            },
+            {
+                title: "Reading Anchors — McCloud",
+                content: `
+                    <h2>Reading Anchors — McCloud</h2>
+                    <p>${INPUT.keyArguments.mcBridge}</p>
+                    <div class="quote-chip" data-quote-index="2"></div>
+                    <div class="quote-chip" data-quote-index="3"></div>
+                `
+            },
+            {
+                title: "Synthesis",
+                content: `
+                    <h2>Synthesis: Windows vs. Mirrors</h2>
+                    <div class="two-column-table">
+                        <div class="header-cell">Windows (Immediacy)</div>
+                        <div class="header-cell">Mirrors (Hypermediacy)</div>
+
+                        <div><strong>Interface Tactic:</strong> Flattening seams, full-screen, minimal chrome, direct access.</div>
+                        <div><strong>Interface Tactic:</strong> Foregrounding seams, multiple windows, layered elements, visible controls.</div>
+
+                        <div><strong>Perceptual Effect:</strong> Transparency, immersion, forgetting the medium, belief in direct presence.</div>
+                        <div><strong>Perceptual Effect:</strong> Self-awareness, multiplicity, reminding of the medium, participation in representation.</div>
+
+                        <div><strong>Hidden Cost:</strong> Conceals mediation, naturalizes conventions, limits critical distance.</div>
+                        <div><strong>Hidden Cost:</strong> Can break immersion, demand cognitive effort, risk aesthetic overload.</div>
+                    </div>
+                `
+            },
+            {
+                title: "Case Study: " + INPUT.caseMedium,
+                content: `
+                    <h2>Case Study: ${INPUT.caseMedium}</h2>
+                    <p>Analyzing a concrete feature through our lenses:</p>
+                    <div class="case-study-item">
+                        <h3>Immediacy</h3>
+                        <p>The ${INPUT.caseMedium} strives for visual transparency, minimizing UI to immerse the user in the content. <span class="small-caps">[source: Bolter & Grusin, Remediation]</span></p>
+                        <ul><li>${INPUT.microEvidence[0]}</li></ul>
+                    </div>
+                    <div class="case-study-item">
+                        <h3>Hypermediacy</h3>
+                        <p>Yet, the interface subtly reminds the user of its mediated nature, displaying elements that highlight the act of viewing. <span class="small-caps">[source: Bolter & Grusin, Remediation]</span></p>
+                        <ul><li>${INPUT.microEvidence[1]}</li></ul>
+                    </div>
+                    <div class="case-study-item">
+                        <h3>Remediation</h3>
+                        <p>The format of ${INPUT.caseMedium} directly refashions conventions from older visual storytelling media. <span class="small-caps">[source: Bolter & Grusin, Remediation]</span></p>
+                        <ul><li>${INPUT.microEvidence[2]}</li></ul>
+                    </div>
+                    <div class="case-study-item">
+                        <h3>Closure</h3>
+                        <p>Users actively participate in constructing the narrative flow, mentally bridging the gaps between discrete content segments. <span class="small-caps">[source: McCloud, Understanding Comics]</span></p>
+                        <ul><li>${INPUT.microEvidence[3]}</li></ul>
+                    </div>
+                `
+            },
+            {
+                title: "Design Teardown (micro-forensics)",
+                content: `
+                    <h2>Design Teardown: ${INPUT.caseMedium}</h2>
+                    <p>Labeling window (flattening seams) vs mirror (foregrounding seams) tactics:</p>
+                    <div class="diagram-box">
+                        <pre>
++---------------------------------+
+|            (User)               |
+|            &#9660;                 |
+|   +--------------------------+  |
+|   |   [Profile Icon]         |  |
+|   |   &#9679;--&#9679;--&#9679;--&#9679;--&#9679;--  | &lt;-- Mirror: Progress dots, visible user identity
+|   |         (Full-Screen      |  |
+|   |          Content)        |  |
+|   |                          |  |
+|   |  &lt;-- Swipe Left   Swipe Right --&gt; |  | &lt;-- Window: Direct content, immersive view
+|   |                          |  |
+|   |                          |  |
+|   | (Tap anywhere to advance)|  | &lt;-- Window: Intuitive interaction, minimal control
+|   +--------------------------+  |
+|                                 |
++---------------------------------+
+                        </pre>
+                    </div>
+                    <p>The design of ${INPUT.caseMedium} masterfully balances these two modes. The full-screen content and tap-to-advance gesture aim for transparency (window), while the visible progress bar and user/profile indicators subtly reintroduce awareness of the platform (mirror).</p>
+                `
+            },
+            {
+                title: "Counter-Case / Failure Mode",
+                content: `
+                    <h2>Counter-Case: Immediacy Breaks</h2>
+                    <p>When the illusion of immediacy falters, hypermediacy often reveals itself, forcing users to confront the medium.</p>
+                    <h3>Example: Glitch in ${INPUT.caseMedium}</h3>
+                    <p>Imagine a moment where an Instagram Story fails to load, showing a buffering spinner or a blank black screen. This technical glitch immediately shatters the seamless illusion of immediacy. Instead of the content, the user is forced to confront the *medium* itself – the slow network, the rendering process, the software's failure.</p>
+                    <p>This experience foregrounds the presence of the device, the network, and the application, turning a window into a mirror. The effortless flow breaks, revealing the layers of technology that were previously invisible. <span class="small-caps">[source: Bolter & Grusin, Remediation]</span></p>
+                `
+            },
+            {
+                title: "Q&A with Jay Bolter",
+                content: `
+                    <h2>Q&A with Jay Bolter</h2>
+                    <p>Guest: Jay Bolter</p>
+                    <ol>
+                        <li>Considering the pervasive "immediacy" of interfaces like ${INPUT.caseMedium}, how do you see the ongoing tension between transparency and hypermediacy evolving in AI-generated or AR/VR experiences? <span class="small-caps">[Grounded in: Bolter & Grusin, 1999, p. 21]</span></li>
+                        <li>If hypermediacy serves to remind the user of the medium, what ethical implications arise when platforms deliberately obscure their own algorithms or data collection, effectively creating a false sense of immediacy? <span class="small-caps">[Grounded in: Bolter & Grusin, 1999, p. 34]</span></li>
+                        <li>Given that new media constantly remediate older forms, how might our understanding of "originality" or "authenticity" shift as digital artifacts become increasingly complex composites of past and present media? <span class="small-caps">[Grounded in: Bolter & Grusin, Remediation]</span></li>
+                    </ol>
+                `
+            },
+            {
+                title: "Discussion Prompts",
+                content: `
+                    <h2>Discussion Prompts</h2>
+                    <ol>
+                        <li>Think about another digital interface you use daily. How does it balance immediacy and hypermediacy? Provide specific examples of design choices.</li>
+                        <li>What are the "affordances" of a medium like Instagram Stories that encourage or enable certain types of content or user behavior, beyond just its visual presentation?</li>
+                        <li>Do design patterns that promote immediacy (like infinite scroll or tap-to-advance) create "habit loops"? What are the societal implications of such designs?</li>
+                        <li>Consider the historical lineage of "Stories" – from early photography to film strips, comic panels, and slideshows. How does this remediation influence its current form and our perception of it?</li>
+                    </ol>
+                `
+            },
+            {
+                title: "References",
+                content: `
+                    <h2>References</h2>
+                    <ul class="references-list" id="references-list">
+                        <!-- References will be dynamically populated -->
+                    </ul>
+                    <button class="copy-citations-btn">Copy Citations</button>
+                `
+            }
+        ];
+
+        let currentSlideIndex = 0;
+        let slides = [];
+        const totalQuotesInInput = INPUT.quotes.length; // Total quotes defined in INPUT
+        let renderedQuoteChipsCount = 0; // Number of quote chips successfully rendered from INPUT
+        let startX = 0; // For swipe detection
+        let startY = 0;
+        let endX = 0;   // For swipe detection
+        let endY = 0;
+
+        const presentationContainer = document.getElementById('presentation-container');
+        const prevBtn = document.getElementById('prev-slide-btn');
+        const nextBtn = document.getElementById('next-slide-btn');
+        const progressDotsContainer = document.querySelector('.progress-dots');
+        const groundedBadge = document.querySelector('.grounded-badge');
+        const masthead = document.querySelector('.masthead');
+        const navBar = document.querySelector('.nav-bar');
+
+        function generateUniqueId(prefix = 'slide-') {
+            return prefix + Math.random().toString(36).substr(2, 9);
+        }
+
+        function renderSlides() {
+            presentationContainer.innerHTML = '';
+            slidesData.forEach((slideData, index) => {
+                const slide = document.createElement('section');
+                slide.className = 'slide';
+                slide.id = generateUniqueId('slide-');
+                slide.setAttribute('role', 'region');
+                slide.setAttribute('aria-live', 'polite');
+                slide.setAttribute('aria-label', slideData.title);
+                slide.setAttribute('tabindex', '-1'); // Make slides focusable
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = 'slide-content-wrapper';
+                wrapper.innerHTML = slideData.content;
+                slide.appendChild(wrapper);
+
+                presentationContainer.appendChild(slide);
+            });
+            slides = Array.from(presentationContainer.querySelectorAll('.slide'));
+
+            renderedQuoteChipsCount = 0; // Reset for accurate counting of *used* quotes
+            // Process all quote chips found across all slides
+            document.querySelectorAll('.quote-chip').forEach(chip => {
+                const quoteIndex = parseInt(chip.dataset.quoteIndex);
+                if (!isNaN(quoteIndex) && INPUT.quotes[quoteIndex]) {
+                    const fullQuoteObj = INPUT.quotes[quoteIndex];
+                    const truncatedText = fullQuoteObj.text.length > 25 ? fullQuoteObj.text.substring(0, 25).trim() + '...' : fullQuoteObj.text;
+                    
+                    chip.innerHTML = `
+                        <p>${truncatedText}</p>
+                        <small class="small-caps">[${fullQuoteObj.author}, ${fullQuoteObj.year}, ${fullQuoteObj.cite}]</small>
+                        <div class="quote-full">
+                            <p>${fullQuoteObj.text}</p>
+                        </div>
+                    `;
+                    // Add event listener to the newly created chip
+                    const quoteFullElement = chip.querySelector('.quote-full');
+                    if (quoteFullElement) {
+                        chip.addEventListener('click', (e) => {
+                            e.stopPropagation(); // Prevent slide navigation
+                            chip.classList.toggle('expanded');
+                            quoteFullElement.classList.toggle('expanded');
+                        });
+                        renderedQuoteChipsCount++; // Increment count only if a quote was successfully processed
+                    }
+                } else {
+                    chip.innerHTML = `<p style="color:red; font-size:0.8em;">WARNING: Quote data missing or invalid for index ${quoteIndex}.</p>`;
+                    chip.style.cursor = 'default';
+                }
+            });
+            updateGroundedBadge(); // Update badge after all quotes are processed
+            
+            // Render progress dots
+            progressDotsContainer.innerHTML = '';
+            slidesData.forEach((_, index) => {
+                const dot = document.createElement('span');
+                dot.className = 'dot';
+                dot.setAttribute('role', 'tab');
+                dot.setAttribute('aria-controls', slides[index].id);
+                dot.setAttribute('aria-label', `Go to slide ${index + 1}: ${slidesData[index].title}`);
+                dot.setAttribute('tabindex', '0');
+                dot.addEventListener('click', () => updateSlide(index));
+                progressDotsContainer.appendChild(dot);
+            });
+
+            // Populate references list
+            const referencesList = document.getElementById('references-list');
+            if (referencesList) {
+                referencesList.innerHTML = '';
+                const uniqueRefs = new Set();
+                
+                // Add references from INPUT.quotes
+                INPUT.quotes.forEach(q => {
+                    const refString = `${q.author}, <em>${q.work}</em>, ${q.year}, ${q.cite}.`;
+                    uniqueRefs.add(refString);
+                });
+                // Add static full book references if not already covered
+                uniqueRefs.add("Bolter, J. D., & Grusin, R. (1999). <em>Remediation: Understanding new media</em>. MIT Press.");
+                uniqueRefs.add("McCloud, S. (1993). <em>Understanding comics: The invisible art</em>. HarperPerennial.");
+
+                Array.from(uniqueRefs).sort().forEach(ref => {
+                    const li = document.createElement('li');
+                    li.innerHTML = ref;
+                    referencesList.appendChild(li);
+                });
+
+                document.querySelector('.copy-citations-btn').addEventListener('click', copyCitations);
+            }
+        }
+
+        function updateGroundedBadge() {
+            groundedBadge.textContent = `Grounded ${renderedQuoteChipsCount}/${totalQuotesInInput}`;
+        }
+        
+        function updateSlide(newIndex) {
+            if (newIndex < 0 || newIndex >= slides.length) return;
+
+            const oldIndex = currentSlideIndex;
+            const oldSlide = slides[oldIndex];
+            const newSlide = slides[newIndex];
+            const direction = newIndex > oldIndex ? 'next' : 'prev';
+
+            // Apply transition styles, respecting reduced motion
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const transitionStyle = prefersReducedMotion ? 'none' : 'transform 0.3s ease-out, opacity 0.3s ease-out';
+            oldSlide.style.transition = transitionStyle;
+            newSlide.style.transition = transitionStyle;
+
+            // Outgoing slide
+            oldSlide.classList.remove('active');
+            oldSlide.style.transform = direction === 'next' ? 'translateX(-100%)' : 'translateX(100%)';
+            // Hide for accessibility after transition
+            if (!prefersReducedMotion) {
+                setTimeout(() => { oldSlide.style.visibility = 'hidden'; oldSlide.style.pointerEvents = 'none'; }, 300);
+            } else {
+                oldSlide.style.visibility = 'hidden';
+                oldSlide.style.pointerEvents = 'none';
+            }
+
+            // Incoming slide
+            newSlide.style.visibility = 'visible';
+            newSlide.style.pointerEvents = 'auto';
+            newSlide.style.transform = direction === 'next' ? 'translateX(100%)' : 'translateX(-100%)';
+            // Force reflow for transform to take effect before transition
+            newSlide.offsetWidth; 
+            newSlide.classList.add('active');
+            newSlide.style.transform = 'translateX(0)';
+
+            currentSlideIndex = newIndex;
+            window.location.hash = `#slide-${currentSlideIndex}`;
+            updateProgressDots();
+            
+            // Announce slide title for screen readers
+            const slideTitle = slidesData[newIndex].title;
+            groundedBadge.setAttribute('aria-live', 'assertive');
+            groundedBadge.textContent = `Slide ${newIndex + 1} of ${slides.length}: ${slideTitle}`;
+            setTimeout(() => {
+                groundedBadge.setAttribute('aria-live', 'polite');
+                updateGroundedBadge(); // Revert to badge message after announcement
+            }, 1000);
+            newSlide.focus(); // Focus new slide for keyboard navigation
+        }
+
+
+        function updateProgressDots() {
+            const dots = progressDotsContainer.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                if (index === currentSlideIndex) {
+                    dot.classList.add('active');
+                    dot.setAttribute('aria-selected', 'true');
+                } else {
+                    dot.classList.remove('active');
+                    dot.setAttribute('aria-selected', 'false');
+                }
+            });
+            prevBtn.disabled = currentSlideIndex === 0;
+            nextBtn.disabled = currentSlideIndex === slides.length - 1;
+        }
+
+        function copyCitations() {
+            const citations = [];
+            INPUT.quotes.forEach(q => {
+                let text = q.text.length > 25 ? q.text.substring(0, 25).trim() + '...' : q.text;
+                citations.push(`${q.author}, "${text}" (${q.work}, ${q.year}, ${q.cite})`);
+            });
+            citations.push("Bolter, J. D., & Grusin, R. (1999). Remediation: Understanding new media. MIT Press.");
+            citations.push("McCloud, S. (1993). Understanding comics: The invisible art. HarperPerennial.");
+
+            const citationText = citations.sort().join('\n');
+            navigator.clipboard.writeText(citationText).then(() => {
+                alert('Citations copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy citations: ', err);
+                alert('Failed to copy citations. Please try manually.');
+            });
+        }
+
+        // Event Listeners
+        prevBtn.addEventListener('click', () => updateSlide(currentSlideIndex - 1));
+        nextBtn.addEventListener('click', () => updateSlide(currentSlideIndex + 1));
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                updateSlide(currentSlideIndex + 1);
+            } else if (e.key === 'ArrowLeft') {
+                updateSlide(currentSlideIndex - 1);
+            }
+        });
+
+        // Swipe detection
+        presentationContainer.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        });
+
+        presentationContainer.addEventListener('touchend', (e) => {
+            endX = e.changedTouches[0].clientX;
+            endY = e.changedTouches[0].clientY;
+            const deltaX = endX - startX;
+            const deltaY = endY - startY;
+
+            // Consider horizontal swipes with a minimum distance threshold, ignoring mostly vertical scrolls
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) { 
+                if (deltaX > 0) { // Swiped right (show previous)
+                    updateSlide(currentSlideIndex - 1);
+                } else { // Swiped left (show next)
+                    updateSlide(currentSlideIndex + 1);
+                }
+            }
+        });
+
+        // Adjust slide padding for fixed header/footer dynamically
+        function adjustSlidePadding() {
+            const mastheadHeight = masthead.offsetHeight;
+            const navBarHeight = navBar.offsetHeight;
+            slides.forEach((slide, index) => {
+                const wrapper = slide.querySelector('.slide-content-wrapper');
+                if (wrapper) {
+                    if (index !== 0) { // All slides except the cover
+                        wrapper.style.paddingTop = `${mastheadHeight + 20}px`;
+                        wrapper.style.paddingBottom = `${navBarHeight + 20}px`;
+                    } else { // Cover slide uses full height, no padding from header/footer
+                        wrapper.style.paddingTop = `0`;
+                        wrapper.style.paddingBottom = `0`;
+                    }
+                }
+            });
+        }
+
+        // Initial setup
+        renderSlides();
+        const initialSlideIndex = window.location.hash ? parseInt(window.location.hash.replace('#slide-', '')) : 0;
+        updateSlide(isNaN(initialSlideIndex) ? 0 : initialSlideIndex);
+
+        // Event listeners for resizing and orientation change to adjust padding
+        window.addEventListener('resize', adjustSlidePadding);
+        window.addEventListener('orientationchange', adjustSlidePadding);
+        setTimeout(adjustSlidePadding, 100); // Small delay to ensure heights are calculated correctly after DOM render
+
+    </script>
+</body>
+</html>
